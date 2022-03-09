@@ -1,0 +1,76 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = "postgresql://prisma:prisma@127.0.0.1:5432/grading-app"
+}
+
+model User {
+  id        Int                @id @default(autoincrement())
+  email     String             @unique
+  firstName String
+  lastName  String
+  social    Json
+  courses   CourseEnrollment[]
+
+  testResults TestResult[] @relation(name: "results")
+  testGraded  TestResult[] @relation(name: "graded")
+}
+
+model Course {
+  id            Int                @id @default(autoincrement())
+  name          String
+  courseDetails String
+  members       CourseEnrollment[]
+  tests         Test[]
+}
+
+model CourseEnrollment {
+  createdAt DateTime @default(now())
+  role      UserRole
+
+  userId   Int
+  user     User   @relation(fields: [userId], references: [id])
+  courseId Int
+  course   Course @relation(fields: [courseId], references: [id])
+
+  // user can associate with a course with multiple roles
+  @@id([userId, courseId, role])
+}
+
+// // TODO: define fields and relations
+model Test {
+  // 1 course -> many tests
+  id        Int      @id @default(autoincrement())
+  updatedAt DateTime @updatedAt
+  name      String
+  date      DateTime
+
+  // Relation fields
+  courseId   Int
+  course     Course       @relation(fields: [courseId], references: [id])
+  testResult TestResult[]
+}
+
+// // TODO: define fields and relations
+model TestResult {
+  // 1 test -> many test results
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  result    Int // Percentage precise to one decimal point represented as result*10^-1
+
+  testId Int
+  test   Test @relation(fields: [testId], references: [id])
+
+  studentId Int
+  student   User @relation(name: "results", fields: [studentId], references: [id])
+  graderId  Int
+  gradedBy  User @relation(name: "graded", fields: [graderId], references: [id])
+}
+
+enum UserRole {
+  STUDENT
+  TEACHER
+}
